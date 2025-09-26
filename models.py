@@ -1,6 +1,10 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, EmailStr, validator
+import hashlib
+
+def hash_sha256(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 class SurveySubmission(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -9,7 +13,8 @@ class SurveySubmission(BaseModel):
     consent: bool = Field(..., description="Must be true to accept")
     rating: int = Field(..., ge=1, le=5)
     comments: Optional[str] = Field(None, max_length=1000)
-  
+    user_agent: Optional[str] = Field(None, description="Browser or client identifier")
+    submission_id: Optional[str] = Field(None, description="Unique submission identifier")
 
     @validator("comments")
     def _strip_comments(cls, v):

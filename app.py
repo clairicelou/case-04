@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pydantic import ValidationError
-from models import SurveySubmission, StoredSurveyRecord
+from models import SurveySubmission, StoredSurveyRecord, hash_sha256
 from storage import append_json_line
 
 app = Flask(__name__)
@@ -29,13 +29,35 @@ def submit_survey():
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "detail": ve.errors()}), 422
 
-    record = StoredSurveyRecord(
-        **submission.dict(),
-        received_at=datetime.now(timezone.utc),
-        ip=request.headers.get("X-Forwarded-For", request.remote_addr or "")
-    )
-    append_json_line(record.dict())
-    return jsonify({"status": "ok"}), 201
+
+    # Hash PII
+    hashed_email = hash_sha256(submission.email)
+    hashed_age = hash_sha256(str(submission.age))
+
+    # Compute submission_id if not provided
+    if submission.submission_id:
+        submission_id = submission.submission_id
+    else:
+        timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+        submission_id = hash_sha256(submission.email + timestamp_str)
+
+    # Build the record
+    record = {
+        "submission_id": submission_id,
+        "name": submission.name,
+        "email": hashed_email,
+        "age": hashed_age,
+        "consent": submission.consent,
+        "rating": submission.rating,
+        "comments": submission.comments,
+        "user_agent": submission.user_agent,
+        "received_at": datetime.now(timezone.utc).isoformat(),
+        "ip": request.headers.get("X-Forwarded-For", request.remote_addr or "")
+    }
+
+    append_json_line(record)
+    return jsonify({"status": "ok", "submission_id": submission_id}), 201
+
 
 if __name__ == "__main__":
     app.run(port=0, debug=True)
