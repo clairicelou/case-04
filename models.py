@@ -26,7 +26,15 @@ class SurveySubmission(BaseModel):
             raise ValueError("consent must be true")
         return v
         
-#Good example of inheritance
-class StoredSurveyRecord(SurveySubmission):
+
+class StoredSurveyRecord(BaseModel):
+    submission_id: str
+    name: str
+    email_hash: str
+    age_hash: str
+    consent: bool
+    rating: int
+    comments: Optional[str]
+    user_agent: Optional[str]
     received_at: datetime
     ip: str

@@ -29,35 +29,44 @@ def submit_survey():
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "detail": ve.errors()}), 422
 
-
-    # Hash PII
-    hashed_email = hash_sha256(submission.email)
-    hashed_age = hash_sha256(str(submission.age))
-
-    # Compute submission_id if not provided
+    # Compute submission_id if missing
     if submission.submission_id:
         submission_id = submission.submission_id
     else:
-        timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+        timestamp_str = datetime.utcnow().strftime("%Y%m%d%H")  # YYYYMMDDHH
         submission_id = hash_sha256(submission.email + timestamp_str)
 
-    # Build the record
-    record = {
-        "submission_id": submission_id,
-        "name": submission.name,
-        "email": hashed_email,
-        "age": hashed_age,
-        "consent": submission.consent,
-        "rating": submission.rating,
-        "comments": submission.comments,
-        "user_agent": submission.user_agent,
-        "received_at": datetime.now(timezone.utc).isoformat(),
-        "ip": request.headers.get("X-Forwarded-For", request.remote_addr or "")
-    }
+    # Hash PII
+    email_hash = hash_sha256(submission.email)
+    age_hash = hash_sha256(str(submission.age))
 
-    append_json_line(record)
+    # Create stored record with hashed PII
+    record = StoredSurveyRecord(
+        submission_id=submission_id,
+        name=submission.name,
+        email_hash=email_hash,
+        age_hash=age_hash,
+        consent=submission.consent,
+        rating=submission.rating,
+        comments=submission.comments,
+        user_agent=submission.user_agent,
+        received_at=datetime.now(timezone.utc),
+        ip=request.headers.get("X-Forwarded-For", request.remote_addr or "")
+    )
+
+    append_json_line(record.dict())
     return jsonify({"status": "ok", "submission_id": submission_id}), 201
 
-
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=True)  # <- Set port to 5000 before submitting
+
+
+
+
+
+
+
+
+
+
+
