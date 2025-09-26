@@ -44,8 +44,8 @@ def submit_survey():
     record = StoredSurveyRecord(
         submission_id=submission_id,
         name=submission.name,
-        email_hash=email_hash,
-        age_hash=age_hash,
+        hashed_email=email_hash,
+        hashed_age=age_hash,
         consent=submission.consent,
         rating=submission.rating,
         comments=submission.comments,
@@ -54,11 +54,12 @@ def submit_survey():
         ip=request.headers.get("X-Forwarded-For", request.remote_addr or "")
     )
 
+
     append_json_line(record.dict())
     return jsonify({"status": "ok", "submission_id": submission_id}), 201
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)  # <- Set port to 5000 before submitting
+    app.run(port=5000, debug=True)  
 
 
 
