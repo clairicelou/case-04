@@ -30,8 +30,8 @@ class SurveySubmission(BaseModel):
 class StoredSurveyRecord(BaseModel):
     submission_id: str
     name: str
-    email_hash: str
-    age_hash: str
+    hashed_email: str
+    hashed_age: str
     consent: bool
     rating: int
     comments: Optional[str]
